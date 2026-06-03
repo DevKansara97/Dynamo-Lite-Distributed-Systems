@@ -1,57 +1,177 @@
 package com.dynamo.lite.protocol;
 
-import com.dynamo.lite.storage.InMemoryStorageEngine;
-
 public class RequestParser {
 
-    private final InMemoryStorageEngine storage;
+    public static Request parse(String line) {
 
-    public RequestParser(InMemoryStorageEngine storage) {
-        this.storage = storage;
+        if (line == null
+                || line.isBlank()) {
+            return new Request(
+                    CommandType.UNKNOWN,
+                    null, null, false);
+        }
+
+        String trimmed = line.trim();
+
+        // Internal node-to-node messages
+        if (trimmed.startsWith("INTERNAL ")) {
+            return parseInternal(trimmed);
+        }
+
+        // Client messages
+        String[] parts = trimmed.split(" ", 3);
+        String cmd = parts[0].toUpperCase();
+
+        return switch (cmd) {
+
+            case "PUT" -> {
+                if (parts.length < 3) yield new Request(
+                        CommandType.UNKNOWN,
+                        null, null, false);
+                yield new Request(
+                        CommandType.PUT,
+                        parts[1], parts[2], false);
+            }
+
+            case "GET" -> {
+                if (parts.length < 2) yield new Request(
+                        CommandType.UNKNOWN,
+                        null, null, false);
+                yield new Request(
+                        CommandType.GET,
+                        parts[1], null, false);
+            }
+
+            case "DELETE" -> {
+                if (parts.length < 2) yield new Request(
+                        CommandType.UNKNOWN,
+                        null, null, false);
+                yield new Request(
+                        CommandType.DELETE,
+                        parts[1], null, false);
+            }
+
+            case "PING" -> new Request(
+                    CommandType.PING,
+                    null, null, false);
+
+            case "STATUS" -> new Request(
+                    CommandType.STATUS,
+                    null, null, false);
+
+            default -> new Request(
+                    CommandType.UNKNOWN,
+                    null, null, false);
+        };
     }
 
-    public String parse(String request) {
+    private static Request parseInternal(
+            String line) {
 
-        if (request == null || request.isBlank()) {
-            return "ERROR INVALID_COMMAND";
-        }
+        // Strip "INTERNAL " prefix
+        String rest = line.substring(9).trim();
+        String[] parts = rest.split(" ", 4);
+        String sub = parts[0].toUpperCase();
 
-        String[] parts = request.split(" ", 3);
+        return switch (sub) {
 
-        String command = parts[0].toUpperCase();
+            case "REPLICATE" -> {
+                String op = parts[1].toUpperCase();
+                yield switch (op) {
+                    case "PUT" -> new Request(
+                            CommandType.INTERNAL_REPLICATE_PUT,
+                            parts[2],
+                            parts.length > 3
+                                    ? parts[3] : null,
+                            true);
+                    case "DELETE" -> new Request(
+                            CommandType.INTERNAL_REPLICATE_DELETE,
+                            parts[2],
+                            null, true);
+                    case "GET" -> new Request(
+                            CommandType.INTERNAL_REPLICATE_GET,
+                            parts[2],
+                            null, true);
+                    default -> new Request(
+                            CommandType.UNKNOWN,
+                            null, null, true);
+                };
+            }
 
-        switch (command) {
+            case "PING" -> new Request(
+                    CommandType.INTERNAL_PING,
+                    parts.length > 1
+                            ? parts[1] : null,
+                    null, true);
 
-            case "PUT":
+            case "PONG" -> new Request(
+                    CommandType.INTERNAL_PONG,
+                    parts.length > 1
+                            ? parts[1] : null,
+                    null, true);
 
-                if (parts.length < 3) {
-                    return "ERROR INVALID_PUT";
-                }
+            case "FORWARD" -> {
+                String op = parts[1].toUpperCase();
+                yield switch (op) {
+                    case "PUT" -> new Request(
+                            CommandType.INTERNAL_FORWARD_PUT,
+                            parts[2],
+                            parts.length > 3
+                                    ? parts[3] : null,
+                            true);
+                    case "GET" -> new Request(
+                            CommandType.INTERNAL_FORWARD_GET,
+                            parts[2],
+                            null, true);
+                    default -> new Request(
+                            CommandType.UNKNOWN,
+                            null, null, true);
+                };
+            }
 
-                return storage.put(parts[1], parts[2]);
+            case "HINT" -> {
+                String op = parts[1].toUpperCase();
+                yield switch (op) {
+                    case "PUT" -> new Request(
+                            CommandType.INTERNAL_HINT_PUT,
+                            parts[2],
+                            parts.length > 3
+                                    ? parts[3] : null,
+                            true);
+                    case "FLUSH" -> new Request(
+                            CommandType.INTERNAL_HINT_FLUSH,
+                            parts.length > 1
+                                    ? parts[1] : null,
+                            null, true);
+                    default -> new Request(
+                            CommandType.UNKNOWN,
+                            null, null, true);
+                };
+            }
 
-            case "GET":
+            case "JOIN" -> new Request(
+                    CommandType.INTERNAL_JOIN,
+                    parts.length > 1
+                            ? parts[1] : null,
+                    parts.length > 2
+                            ? parts[2] + ":"
+                              + (parts.length > 3
+                                 ? parts[3] : "") : null,
+                    true);
 
-                if (parts.length < 2) {
-                    return "ERROR INVALID_GET";
-                }
+            case "LEAVE" -> new Request(
+                    CommandType.INTERNAL_LEAVE,
+                    parts.length > 1
+                            ? parts[1] : null,
+                    null, true);
 
-                return storage.get(parts[1]);
+            case "STATUS" -> new Request(
+                    CommandType.INTERNAL_STATUS,
+                    null, null, true);
 
-            case "DELETE":
-
-                if (parts.length < 2) {
-                    return "ERROR INVALID_DELETE";
-                }
-
-                return storage.delete(parts[1]);
-	    
-	    case "PING":
-		return "PONG";
- 
-            default:
-                return "ERROR UNKNOWN_COMMAND";
-        }
+            default -> new Request(
+                    CommandType.UNKNOWN,
+                    null, null, true);
+        };
     }
 }
-

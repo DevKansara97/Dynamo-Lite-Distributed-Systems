@@ -1,40 +1,37 @@
 package com.dynamo.lite.storage;
 
-import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class InMemoryStorageEngine {
+public class InMemoryStorageEngine
+        implements StorageEngine {
 
-    private final Map<String, String> storage;
+    private final ConcurrentHashMap<String, String>
+            store = new ConcurrentHashMap<>();
 
-    public InMemoryStorageEngine() {
-        storage = new ConcurrentHashMap<>();
+    @Override
+    public void put(String key, String value) {
+        store.put(key, value);
     }
 
-    public String put(String key, String value) {
-        storage.put(key, value);
-        return "OK";
+    @Override
+    public Optional<String> get(String key) {
+        return Optional.ofNullable(store.get(key));
     }
 
-    public String get(String key) {
-        if (storage.containsKey(key)) {
-            return "VALUE " + storage.get(key);
-        }
-
-        return "NOT_FOUND";
+    @Override
+    public boolean delete(String key) {
+        return store.remove(key) != null;
     }
 
-    public String delete(String key) {
-        if (storage.containsKey(key)) {
-            storage.remove(key);
-            return "OK";
-        }
-
-        return "NOT_FOUND";
-    }
-
+    @Override
     public int size() {
-        return storage.size();
+        return store.size();
+    }
+
+    @Override
+    public Set<String> keys() {
+        return store.keySet();
     }
 }
-
