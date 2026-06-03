@@ -6,14 +6,13 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.dynamo.lite.storage.StorageEngine;
+import com.dynamo.lite.routing.RequestRouter;
 import com.dynamo.lite.util.DynamoLogger;
 
 public class TcpServer implements Runnable {
 
     private final int port;
-    private final StorageEngine storage;
-    private final String nodeId;
+    private final RequestRouter router;
     private final DynamoLogger logger;
     private final ExecutorService pool;
 
@@ -21,14 +20,12 @@ public class TcpServer implements Runnable {
 
     public TcpServer(
             int port,
-            StorageEngine storage,
-            String nodeId,
+            RequestRouter router,
             int threadPoolSize,
             DynamoLogger logger) {
 
         this.port = port;
-        this.storage = storage;
-        this.nodeId = nodeId;
+        this.router = router;
         this.logger = logger;
         this.pool = Executors
                 .newFixedThreadPool(
@@ -41,7 +38,8 @@ public class TcpServer implements Runnable {
         try (ServerSocket serverSocket =
                      new ServerSocket(port)) {
 
-            logger.info("TCP server listening"
+            logger.info(
+                    "TCP server listening"
                     + " on port " + port);
 
             while (running) {
@@ -51,11 +49,11 @@ public class TcpServer implements Runnable {
 
                 client.setSoTimeout(30_000);
 
-                pool.submit(new ClientHandler(
-                        client,
-                        storage,
-                        nodeId,
-                        logger));
+                pool.submit(
+                        new ClientHandler(
+                                client,
+                                router,
+                                logger));
             }
 
         } catch (IOException e) {
