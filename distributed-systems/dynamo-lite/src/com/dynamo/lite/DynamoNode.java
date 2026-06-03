@@ -1,5 +1,11 @@
 package com.dynamo.lite;
 
+import java.util.List;
+import com.dynamo.lite.cluster.ClusterState;
+import com.dynamo.lite.cluster.HeartbeatManager;
+import com.dynamo.lite.cluster.NodeInfo;
+import com.dynamo.lite.cluster.ReplicaClient;
+
 import com.dynamo.lite.config.DynamoConfig;
 import com.dynamo.lite.server.TcpServer;
 import com.dynamo.lite.storage.InMemoryStorageEngine;
@@ -32,6 +38,34 @@ public class DynamoNode {
 
         StorageEngine storage =
                 new InMemoryStorageEngine();
+                
+        // Initialize cluster state
+        List<NodeInfo> peers = config.getPeers();
+
+        ClusterState clusterState =
+                new ClusterState(
+                        config.getHeartbeatMissThreshold());
+
+        for (NodeInfo peer : peers) {
+            clusterState.addNode(peer.getNodeId());
+        }
+
+        // Start heartbeat
+        ReplicaClient replicaClient =
+                new ReplicaClient(
+                        config.getHeartbeatTimeoutMs(),
+                        logger);
+
+        HeartbeatManager heartbeat =
+                new HeartbeatManager(
+                        config.getNodeId(),
+                        peers,
+                        clusterState,
+                        replicaClient,
+                        config.getHeartbeatIntervalMs(),
+                        logger);
+
+        heartbeat.start();
 
         TcpServer server = new TcpServer(
                 config.getNodePort(),
