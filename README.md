@@ -2,8 +2,6 @@
 
 A distributed key-value store built from scratch in Java, inspired by Amazon's Dynamo paper. No frameworks, no build tools — raw TCP sockets, custom consistent hashing, and quorum replication across a real multi-node cluster.
 
-> Built as part of a distributed systems study at Ahmedabad University.
-
 ---
 
 ## The idea
