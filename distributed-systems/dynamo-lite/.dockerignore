@@ -1,0 +1,6 @@
+out
+logs
+*.log
+**/.git
+**/.gitignore
+**/.DS_Store

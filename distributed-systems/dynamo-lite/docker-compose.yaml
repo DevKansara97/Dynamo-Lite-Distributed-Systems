@@ -1,0 +1,27 @@
+services:
+  nodea:
+    build: .
+    container_name: dynamo-nodea
+    command: ["config/nodeA.config"]
+    ports:
+      - "7001:7001"
+    volumes:
+      - ./config:/app/config:ro
+
+  nodeb:
+    build: .
+    container_name: dynamo-nodeb
+    command: ["config/nodeB.config"]
+    ports:
+      - "7002:7002"
+    volumes:
+      - ./config:/app/config:ro
+
+  nodec:
+    build: .
+    container_name: dynamo-nodec
+    command: ["config/nodeC.config"]
+    ports:
+      - "7003:7003"
+    volumes:
+      - ./config:/app/config:ro
