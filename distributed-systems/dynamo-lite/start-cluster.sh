@@ -53,11 +53,13 @@ for i in "${!NODES[@]}"; do
     port="${PORTS[$i]}"
     logfile="$LOG_DIR/${node}.log"
 
-    java -cp "$OUT_DIR" com.dynamo.lite.DynamoNode \
+    setsid java -cp "$OUT_DIR" com.dynamo.lite.DynamoNode \
         "$CONFIG_DIR/${node}.config" \
         > "$logfile" 2>&1 &
 
-    echo $! > "$LOG_DIR/${node}.pid"
+    pid=$!
+    echo $pid > "$LOG_DIR/${node}.pid"
+    disown $pid 2>/dev/null || true
     sleep 0.4
 
     # Verify it started
@@ -79,7 +81,8 @@ if [ "${NOGUI:-0}" = "1" ]; then
     echo -e "  Run  ${CYAN}./gui.sh${RESET}  to open the dashboard later."
 else
     echo -e "  Launching GUI dashboard…"
-    java -cp "$OUT_DIR" com.dynamo.lite.client.DynamoGUI &
+    setsid java -cp "$OUT_DIR" com.dynamo.lite.client.DynamoGUI > /dev/null 2>&1 &
+    disown $! 2>/dev/null || true
     echo -e "${GREEN}  ✓ GUI started${RESET}"
 fi
 

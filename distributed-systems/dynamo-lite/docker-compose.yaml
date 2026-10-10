@@ -3,6 +3,9 @@ services:
     build: .
     container_name: dynamo-nodea
     command: ["config/nodeA.config"]
+    environment:
+      - NODE_HOST=nodea
+      - PEERS=NodeB:nodeb:7002,NodeC:nodec:7003
     ports:
       - "7001:7001"
     volumes:
@@ -12,6 +15,9 @@ services:
     build: .
     container_name: dynamo-nodeb
     command: ["config/nodeB.config"]
+    environment:
+      - NODE_HOST=nodeb
+      - PEERS=NodeA:nodea:7001,NodeC:nodec:7003
     ports:
       - "7002:7002"
     volumes:
@@ -21,6 +27,9 @@ services:
     build: .
     container_name: dynamo-nodec
     command: ["config/nodeC.config"]
+    environment:
+      - NODE_HOST=nodec
+      - PEERS=NodeA:nodea:7001,NodeB:nodeb:7002
     ports:
       - "7003:7003"
     volumes:

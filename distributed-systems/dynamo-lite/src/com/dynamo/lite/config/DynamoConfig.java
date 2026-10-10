@@ -29,6 +29,10 @@ public class DynamoConfig {
     }
 
     public String getNodeHost() {
+        String envHost = System.getenv("NODE_HOST");
+        if (envHost != null && !envHost.isBlank()) {
+            return envHost.trim();
+        }
         return props.getProperty("node.host");
     }
 
@@ -38,8 +42,10 @@ public class DynamoConfig {
     }
 
     public List<NodeInfo> getPeers() {
-        String peersStr =
-                props.getProperty("peers", "");
+        String envPeers = System.getenv("PEERS");
+        String peersStr = (envPeers != null && !envPeers.isBlank())
+                ? envPeers
+                : props.getProperty("peers", "");
         List<NodeInfo> peers = new ArrayList<>();
         if (peersStr.isBlank()) return peers;
 

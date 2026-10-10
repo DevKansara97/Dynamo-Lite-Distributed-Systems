@@ -116,6 +116,7 @@ public class DynamoNode {
                         peers,
                         clusterState,
                         replicaClient,
+                        hintStore,
                         config
                         .getHeartbeatIntervalMs(),
                         logger);

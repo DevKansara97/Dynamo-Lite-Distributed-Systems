@@ -5,6 +5,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.dynamo.lite.replication.HintedHandoffStore;
 import com.dynamo.lite.util.DynamoLogger;
 
 public class HeartbeatManager {
@@ -13,6 +14,7 @@ public class HeartbeatManager {
     private final List<NodeInfo> peers;
     private final ClusterState clusterState;
     private final ReplicaClient replicaClient;
+    private final HintedHandoffStore hintStore;
     private final int intervalMs;
     private final DynamoLogger logger;
 
@@ -33,10 +35,23 @@ public class HeartbeatManager {
             int intervalMs,
             DynamoLogger logger) {
 
+        this(selfId, peers, clusterState, replicaClient, null, intervalMs, logger);
+    }
+
+    public HeartbeatManager(
+            String selfId,
+            List<NodeInfo> peers,
+            ClusterState clusterState,
+            ReplicaClient replicaClient,
+            HintedHandoffStore hintStore,
+            int intervalMs,
+            DynamoLogger logger) {
+
         this.selfId = selfId;
         this.peers = peers;
         this.clusterState = clusterState;
         this.replicaClient = replicaClient;
+        this.hintStore = hintStore;
         this.intervalMs = intervalMs;
         this.logger = logger;
     }
@@ -83,6 +98,12 @@ public class HeartbeatManager {
                 if (wasDown) {
                     logger.info(peer.getNodeId()
                             + " recovered → ALIVE");
+                    if (hintStore != null) {
+                        hintStore.flush(
+                                peer.getNodeId(),
+                                peer,
+                                replicaClient);
+                    }
                 }
 
             } else {
